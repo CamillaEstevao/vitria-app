@@ -8,6 +8,7 @@ import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Admin from "./pages/Admin";
 import Produtos from "./pages/Produtos";
+import Loja from "./pages/Loja";
 
 function App() {
   return (
@@ -31,6 +32,11 @@ function App() {
         <Route
           path="/admin/produtos"
           element={<Produtos />}
+        />
+
+        <Route
+          path="/loja/pertinhez"
+          element={<Loja />}
         />
 
       </Routes>

@@ -64,7 +64,9 @@ function Produtos() {
       id: Date.now(),
       nome: novoProduto.nome,
       categoria: novoProduto.categoria || "Sem categoria",
-      preco: novoProduto.preco,
+      preco: novoProduto.preco.startsWith("R$")
+        ? novoProduto.preco
+        : `R$ ${novoProduto.preco}`,
       descricao: novoProduto.descricao,
       imagem: novoProduto.imagem,
       status: "Ativo",
@@ -84,9 +86,7 @@ function Produtos() {
   }
 
   function excluirProduto(id) {
-    const confirmar = window.confirm(
-      "Deseja realmente excluir este produto?"
-    );
+    const confirmar = window.confirm("Deseja realmente excluir este produto?");
 
     if (!confirmar) return;
 
@@ -105,9 +105,7 @@ function Produtos() {
           <p>Gerencie os produtos da sua loja.</p>
         </div>
 
-        <button onClick={() => setModalAberto(true)}>
-          + Novo Produto
-        </button>
+        <button onClick={() => setModalAberto(true)}>+ Novo Produto</button>
       </div>
 
       <div className="produtosCard">
