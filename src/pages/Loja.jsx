@@ -24,6 +24,13 @@ function Loja() {
   const [busca, setBusca] = useState("");
   const [carrinho, setCarrinho] = useState([]);
 
+  const [config, setConfig] = useState({
+    empresa: "Minha Loja",
+    descricao: "Escolha seus produtos e finalize pelo WhatsApp.",
+    whatsapp: "5511999999999",
+    cor: "#7c3aed",
+  });
+
   useEffect(() => {
     const produtosSalvos = localStorage.getItem("vitria_produtos");
 
@@ -32,15 +39,25 @@ function Loja() {
     } else {
       setProdutos(produtosPadrao);
     }
+
+    const configSalva = localStorage.getItem("vitria_config");
+
+    if (configSalva) {
+      setConfig(JSON.parse(configSalva));
+    }
   }, []);
 
   const produtosFiltrados = produtos.filter((produto) =>
     produto.nome.toLowerCase().includes(busca.toLowerCase()),
   );
 
+  function formatarPreco(preco) {
+    if (!preco) return "R$ 0,00";
+    return preco.startsWith("R$") ? preco : `R$ ${preco}`;
+  }
+
   function alterarQuantidade(id, quantidade) {
     const novaQuantidade = Number(quantidade);
-
     if (novaQuantidade < 1) return;
 
     setCarrinho(
@@ -68,7 +85,11 @@ function Loja() {
 
   const total = carrinho.reduce((acc, item) => {
     const valor = parseFloat(
-      item.preco.replace("R$", "").replace(".", "").replace(",", ".").trim(),
+      formatarPreco(item.preco)
+        .replace("R$", "")
+        .replace(".", "")
+        .replace(",", ".")
+        .trim(),
     );
 
     return acc + (isNaN(valor) ? 0 : valor * item.quantidade);
@@ -83,26 +104,40 @@ function Loja() {
     let mensagem = "Olá! Gostaria de fazer o seguinte pedido:%0A%0A";
 
     carrinho.forEach((produto) => {
-      mensagem += `• ${produto.nome} - Qtd: ${produto.quantidade} - ${produto.preco}%0A`;
+      mensagem += `• ${produto.nome} - Qtd: ${
+        produto.quantidade
+      } - ${formatarPreco(produto.preco)}%0A`;
     });
 
-    mensagem += `%0A💰 Total: R$ ${total.toFixed(2)}`;
+    mensagem += `%0A💰 Total: R$ ${total.toFixed(2).replace(".", ",")}`;
 
-    window.open(`https://wa.me/5511999999999?text=${mensagem}`, "_blank");
+    window.open(`https://wa.me/${config.whatsapp}?text=${mensagem}`, "_blank");
   }
 
   return (
-    <div className="lojaPage">
+    <div
+      className="lojaPage"
+      style={{
+        "--cor-principal": config.cor || "#7c3aed",
+      }}
+    >
       <header className="lojaHeader">
         <div>
-          <span className="lojaLogo">P</span>
+          <span className="lojaLogo">
+            {config.empresa ? config.empresa.charAt(0) : "V"}
+          </span>
+
           <div>
-            <h1>Distribuidora Pertinhez</h1>
-            <p>Produtos de limpeza para sua casa ou empresa</p>
+            <h1>{config.empresa}</h1>
+            <p>{config.descricao}</p>
           </div>
         </div>
 
-        <a href="https://wa.me/5511952570819" target="_blank" rel="noreferrer">
+        <a
+          href={`https://wa.me/${config.whatsapp}`}
+          target="_blank"
+          rel="noreferrer"
+        >
           Falar no WhatsApp
         </a>
       </header>
@@ -110,7 +145,7 @@ function Loja() {
       <section className="lojaHero">
         <div>
           <span>CATÁLOGO ONLINE</span>
-          <h2>Compre produtos de limpeza de forma rápida e prática</h2>
+          <h2>Compre produtos de forma rápida e prática</h2>
           <p>
             Escolha os produtos, monte seu pedido e finalize direto pelo
             WhatsApp.
@@ -143,7 +178,7 @@ function Loja() {
                 {carrinho.map((item) => (
                   <li key={item.id} className="carrinhoItem">
                     <span>
-                      {item.nome} - {item.preco}
+                      {item.nome} - {formatarPreco(item.preco)}
                     </span>
 
                     <input
@@ -158,7 +193,7 @@ function Loja() {
                 ))}
               </ul>
 
-              <h4>Total: R$ {total.toFixed(2)}</h4>
+              <h4>Total: R$ {total.toFixed(2).replace(".", ",")}</h4>
 
               <button onClick={finalizarWhatsApp}>
                 Finalizar pelo WhatsApp
@@ -180,7 +215,7 @@ function Loja() {
 
               <small>{produto.categoria}</small>
               <h3>{produto.nome}</h3>
-              <strong>{produto.preco}</strong>
+              <strong>{formatarPreco(produto.preco)}</strong>
 
               <button onClick={() => adicionarAoCarrinho(produto)}>
                 Adicionar ao pedido
