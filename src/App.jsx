@@ -6,6 +6,7 @@ import Admin from "./pages/Admin";
 import Produtos from "./pages/Produtos";
 import Loja from "./pages/Loja";
 import Aparencia from "./pages/Aparencia";
+import Categorias from "./pages/Categorias";
 
 function App() {
   return (
@@ -22,6 +23,9 @@ function App() {
         <Route path="/loja/pertinhez" element={<Loja />} />
 
         <Route path="/admin/aparencia" element={<Aparencia />} />
+
+        <Route path="/admin/categorias" element={<Categorias />} />
+        
       </Routes>
     </BrowserRouter>
   );

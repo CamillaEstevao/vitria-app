@@ -5,30 +5,33 @@ const produtosIniciais = [
   {
     id: 1,
     nome: "Vassoura Multiuso",
-    categoria: "Limpeza",
+    categoria: "Vassouras",
     preco: "R$ 18,90",
     status: "Ativo",
+    descricao: "Produto de qualidade para uso doméstico e comercial.",
+    imagem: "",
+    quantidadeMinima: 1,
   },
   {
     id: 2,
     nome: "Rodo 40cm",
-    categoria: "Limpeza",
+    categoria: "Rodos",
     preco: "R$ 15,90",
     status: "Ativo",
+    descricao: "Rodo resistente para limpeza geral.",
+    imagem: "",
+    quantidadeMinima: 1,
   },
 ];
 
 function Produtos() {
   const [modalAberto, setModalAberto] = useState(false);
+  const [produtoEditando, setProdutoEditando] = useState(null);
+  const [categorias, setCategorias] = useState([]);
 
   const [produtos, setProdutos] = useState(() => {
     const produtosSalvos = localStorage.getItem("vitria_produtos");
-
-    if (produtosSalvos) {
-      return JSON.parse(produtosSalvos);
-    }
-
-    return produtosIniciais;
+    return produtosSalvos ? JSON.parse(produtosSalvos) : produtosIniciais;
   });
 
   const [novoProduto, setNovoProduto] = useState({
@@ -37,19 +40,50 @@ function Produtos() {
     preco: "",
     descricao: "",
     imagem: "",
+    quantidadeMinima: "1",
   });
 
   useEffect(() => {
     localStorage.setItem("vitria_produtos", JSON.stringify(produtos));
   }, [produtos]);
 
+  useEffect(() => {
+    const categoriasSalvas = localStorage.getItem("vitria_categorias");
+    if (categoriasSalvas) setCategorias(JSON.parse(categoriasSalvas));
+  }, []);
+
+  function abrirNovoProduto() {
+    setProdutoEditando(null);
+    setNovoProduto({
+      nome: "",
+      categoria: "",
+      preco: "",
+      descricao: "",
+      imagem: "",
+      quantidadeMinima: "1",
+    });
+    setModalAberto(true);
+  }
+
   function handleChange(event) {
     const { name, value } = event.target;
+    setNovoProduto({ ...novoProduto, [name]: value });
+  }
 
-    setNovoProduto({
-      ...novoProduto,
-      [name]: value,
-    });
+  function handleImagem(event) {
+    const arquivo = event.target.files[0];
+    if (!arquivo) return;
+
+    const reader = new FileReader();
+
+    reader.onload = function () {
+      setNovoProduto({
+        ...novoProduto,
+        imagem: reader.result,
+      });
+    };
+
+    reader.readAsDataURL(arquivo);
   }
 
   function salvarProduto(event) {
@@ -60,8 +94,8 @@ function Produtos() {
       return;
     }
 
-    const produto = {
-      id: Date.now(),
+    const produtoFormatado = {
+      id: produtoEditando ? produtoEditando.id : Date.now(),
       nome: novoProduto.nome,
       categoria: novoProduto.categoria || "Sem categoria",
       preco: novoProduto.preco.startsWith("R$")
@@ -69,10 +103,19 @@ function Produtos() {
         : `R$ ${novoProduto.preco}`,
       descricao: novoProduto.descricao,
       imagem: novoProduto.imagem,
+      quantidadeMinima: Number(novoProduto.quantidadeMinima) || 1,
       status: "Ativo",
     };
 
-    setProdutos([...produtos, produto]);
+    if (produtoEditando) {
+      setProdutos(
+        produtos.map((produto) =>
+          produto.id === produtoEditando.id ? produtoFormatado : produto
+        )
+      );
+    } else {
+      setProdutos([...produtos, produtoFormatado]);
+    }
 
     setNovoProduto({
       nome: "",
@@ -80,21 +123,54 @@ function Produtos() {
       preco: "",
       descricao: "",
       imagem: "",
+      quantidadeMinima: "1",
     });
 
+    setProdutoEditando(null);
     setModalAberto(false);
   }
 
   function excluirProduto(id) {
     const confirmar = window.confirm("Deseja realmente excluir este produto?");
-
     if (!confirmar) return;
 
     setProdutos(produtos.filter((produto) => produto.id !== id));
   }
 
   function editarProduto(produto) {
-    alert(`Em breve iremos editar: ${produto.nome}`);
+    setProdutoEditando(produto);
+
+    setNovoProduto({
+      nome: produto.nome,
+      categoria: produto.categoria,
+      preco: produto.preco,
+      descricao: produto.descricao || "",
+      imagem: produto.imagem || "",
+      quantidadeMinima: produto.quantidadeMinima || "1",
+    });
+
+    setModalAberto(true);
+  }
+
+  function removerImagemProduto() {
+    setNovoProduto({
+      ...novoProduto,
+      imagem: "",
+    });
+  }
+
+  function fecharModal() {
+    setModalAberto(false);
+    setProdutoEditando(null);
+
+    setNovoProduto({
+      nome: "",
+      categoria: "",
+      preco: "",
+      descricao: "",
+      imagem: "",
+      quantidadeMinima: "1",
+    });
   }
 
   return (
@@ -105,16 +181,18 @@ function Produtos() {
           <p>Gerencie os produtos da sua loja.</p>
         </div>
 
-        <button onClick={() => setModalAberto(true)}>+ Novo Produto</button>
+        <button onClick={abrirNovoProduto}>+ Novo Produto</button>
       </div>
 
       <div className="produtosCard">
         <table>
           <thead>
             <tr>
+              <th>Imagem</th>
               <th>Produto</th>
               <th>Categoria</th>
               <th>Preço</th>
+              <th>Mínimo</th>
               <th>Status</th>
               <th>Ações</th>
             </tr>
@@ -123,9 +201,20 @@ function Produtos() {
           <tbody>
             {produtos.map((produto) => (
               <tr key={produto.id}>
+                <td>
+                  <div className="produtoThumb">
+                    {produto.imagem ? (
+                      <img src={produto.imagem} alt={produto.nome} />
+                    ) : (
+                      <span>📦</span>
+                    )}
+                  </div>
+                </td>
+
                 <td>{produto.nome}</td>
                 <td>{produto.categoria}</td>
                 <td>{produto.preco}</td>
+                <td>{produto.quantidadeMinima || 1} un.</td>
                 <td>
                   <span className="statusAtivo">{produto.status}</span>
                 </td>
@@ -157,14 +246,15 @@ function Produtos() {
           <div className="produtoModal">
             <div className="modalHeader">
               <div>
-                <h2>Novo Produto</h2>
-                <p>Cadastre um novo item na sua vitrine.</p>
+                <h2>{produtoEditando ? "Editar Produto" : "Novo Produto"}</h2>
+                <p>
+                  {produtoEditando
+                    ? "Atualize as informações do produto."
+                    : "Cadastre um novo item na sua vitrine."}
+                </p>
               </div>
 
-              <button
-                className="closeModal"
-                onClick={() => setModalAberto(false)}
-              >
+              <button className="closeModal" onClick={fecharModal}>
                 ×
               </button>
             </div>
@@ -183,13 +273,19 @@ function Produtos() {
 
               <label>
                 Categoria
-                <input
-                  type="text"
+                <select
                   name="categoria"
-                  placeholder="Ex: Limpeza"
                   value={novoProduto.categoria}
                   onChange={handleChange}
-                />
+                >
+                  <option value="">Selecione uma categoria</option>
+
+                  {categorias.map((categoria) => (
+                    <option key={categoria.id} value={categoria.nome}>
+                      {categoria.nome}
+                    </option>
+                  ))}
+                </select>
               </label>
 
               <label>
@@ -204,15 +300,37 @@ function Produtos() {
               </label>
 
               <label>
-                URL da imagem
+                Quantidade mínima
                 <input
-                  type="text"
-                  name="imagem"
-                  placeholder="Cole o link da imagem"
-                  value={novoProduto.imagem}
+                  type="number"
+                  name="quantidadeMinima"
+                  min="1"
+                  placeholder="Ex: 12"
+                  value={novoProduto.quantidadeMinima}
                   onChange={handleChange}
                 />
               </label>
+
+              <label>
+                Imagem do produto
+                <input type="file" accept="image/*" onChange={handleImagem} />
+              </label>
+
+              {novoProduto.imagem && (
+                <div className="previewProdutoImagemBox">
+                  <div className="previewProdutoImagem">
+                    <img src={novoProduto.imagem} alt="Prévia do produto" />
+                  </div>
+
+                  <button
+                    type="button"
+                    className="removerImagemBtn"
+                    onClick={removerImagemProduto}
+                  >
+                    Remover imagem
+                  </button>
+                </div>
+              )}
 
               <label>
                 Descrição
@@ -228,13 +346,13 @@ function Produtos() {
                 <button
                   type="button"
                   className="cancelBtn"
-                  onClick={() => setModalAberto(false)}
+                  onClick={fecharModal}
                 >
                   Cancelar
                 </button>
 
                 <button type="submit" className="saveBtn">
-                  Salvar produto
+                  {produtoEditando ? "Salvar alterações" : "Salvar produto"}
                 </button>
               </div>
             </form>
